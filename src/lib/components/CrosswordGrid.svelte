@@ -113,12 +113,34 @@
             input.focus();
         }
     });
+    
+    // Clear the grid
+    function clearGrid() {
+        grid = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(''));
+    }
+    
+    // Make sure grid is immediately accessible to parent components
+    $effect(() => {
+        // This effect ensures the grid is reactive and parent components can access it
+        const _ = grid;
+    });
+    
+    // Exports
+    export { grid, GRID_WIDTH as width, GRID_HEIGHT as height };
 </script>
 
 <div class="flex flex-col items-center justify-center p-4">
-    <div class="mb-4">
+    <div class="mb-4 flex items-center justify-between w-full">
         <h2 class="text-xl font-bold">Crossword Grid Editor</h2>
-        <p>Direction: {direction.charAt(0).toUpperCase() + direction.slice(1)}</p>
+        <div class="flex items-center space-x-2">
+            <span class="text-sm">Direction: {direction.charAt(0).toUpperCase() + direction.slice(1)}</span>
+            <button 
+                class="bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-2 rounded ml-4"
+                onclick={clearGrid}
+            >
+                Clear Grid
+            </button>
+        </div>
     </div>
     
     <div class="grid grid-cols-12 gap-0 border border-gray-400">
