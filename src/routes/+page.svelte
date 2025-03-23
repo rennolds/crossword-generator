@@ -1,6 +1,5 @@
 <script>
     import CrosswordGrid from '$lib/components/CrosswordGrid.svelte';
-    import WordList from '$lib/components/WordList.svelte';
     
     // Initialize with default values
     let grid = $state(Array(10).fill().map(() => Array(12).fill('')));
@@ -14,8 +13,6 @@
         
         <div class="max-w-6xl mx-auto bg-white rounded-lg shadow-lg p-6">
             <CrosswordGrid bind:grid bind:width bind:height />
-            
-            <WordList {grid} {width} {height} />
         </div>
     </div>
 </div>
