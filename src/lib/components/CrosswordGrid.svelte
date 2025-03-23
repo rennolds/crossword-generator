@@ -1,12 +1,17 @@
 <script>
     // Grid dimensions
-    const GRID_WIDTH = 12;
-    const GRID_HEIGHT = 10;
+    let { width, height, grid } = $props();
+    width = 12;
+    height = 10;
     
+
     // Create a 2D array for the grid
-    let grid = $state(
-        Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(''))
-    );
+    let gridState = $state(grid)
+
+    grid = Array(height).fill().map(() => Array(width).fill(''))
+    
+
+
     
     // Track the currently selected cell
     let selectedCell = $state({ row: 0, col: 0 });
@@ -36,7 +41,7 @@
         } 
         // Handle navigation keys
         else if (e.key === 'ArrowRight') {
-            moveToCell(row, Math.min(col + 1, GRID_WIDTH - 1));
+            moveToCell(row, Math.min(col + 1, width - 1));
             e.preventDefault();
         } 
         else if (e.key === 'ArrowLeft') {
@@ -44,7 +49,7 @@
             e.preventDefault();
         } 
         else if (e.key === 'ArrowDown') {
-            moveToCell(Math.min(row + 1, GRID_HEIGHT - 1), col);
+            moveToCell(Math.min(row + 1, height - 1), col);
             e.preventDefault();
         } 
         else if (e.key === 'ArrowUp') {
@@ -54,13 +59,13 @@
         else if (e.key === 'Tab') {
             if (e.shiftKey) {
                 // Move left
-                const prevCol = col > 0 ? col - 1 : GRID_WIDTH - 1;
-                const prevRow = col > 0 ? row : (row > 0 ? row - 1 : GRID_HEIGHT - 1);
+                const prevCol = col > 0 ? col - 1 : width - 1;
+                const prevRow = col > 0 ? row : (row > 0 ? row - 1 : height - 1);
                 moveToCell(prevRow, prevCol);
             } else {
                 // Move right
-                const nextCol = col < GRID_WIDTH - 1 ? col + 1 : 0;
-                const nextRow = col < GRID_WIDTH - 1 ? row : (row < GRID_HEIGHT - 1 ? row + 1 : 0);
+                const nextCol = col < width - 1 ? col + 1 : 0;
+                const nextRow = col < width - 1 ? row : (row < height - 1 ? row + 1 : 0);
                 moveToCell(nextRow, nextCol);
             }
             e.preventDefault();
@@ -86,11 +91,11 @@
     // Move to next cell based on current direction
     function moveToNextCell(row, col) {
         if (direction === 'across') {
-            if (col < GRID_WIDTH - 1) {
+            if (col < width - 1) {
                 moveToCell(row, col + 1);
             }
         } else {
-            if (row < GRID_HEIGHT - 1) {
+            if (row < height - 1) {
                 moveToCell(row + 1, col);
             }
         }
@@ -103,7 +108,7 @@
     }
     
     // Create a 2D array to store references to the cell inputs
-    let cellRefs = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(null));
+    let cellRefs = Array(height).fill().map(() => Array(width).fill(null));
     
     // Effect to focus the selected cell when it changes
     $effect(() => {
@@ -116,17 +121,13 @@
     
     // Clear the grid
     function clearGrid() {
-        grid = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(''));
+        grid = Array(height).fill().map(() => Array(width).fill(''));
     }
     
-    // Make sure grid is immediately accessible to parent components
-    $effect(() => {
-        // This effect ensures the grid is reactive and parent components can access it
-        const _ = grid;
-    });
-    
-    // Exports
-    export { grid, GRID_WIDTH as width, GRID_HEIGHT as height };
+    // Make a function to get the current grid state
+    export function getGrid() {
+        return grid;
+    }
 </script>
 
 <div class="flex flex-col items-center justify-center p-4">
@@ -144,8 +145,8 @@
     </div>
     
     <div class="grid grid-cols-12 gap-0 border border-gray-400">
-        {#each Array(GRID_HEIGHT) as _, rowIndex}
-            {#each Array(GRID_WIDTH) as _, colIndex}
+        {#each Array(height) as _, rowIndex}
+            {#each Array(width) as _, colIndex}
                 <div
                     class="w-10 h-10 border border-gray-300 flex items-center justify-center 
                         font-bold text-lg cursor-pointer
