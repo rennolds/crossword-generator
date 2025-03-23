@@ -33,8 +33,8 @@
     function handleKeyDown(e, row, col) {
         const key = e.key.toUpperCase();
         
-        // Handle letter input (A-Z)
-        if (/^[A-Z]$/.test(key)) {
+        // Handle letter input (A-Z) and underscore for spaces
+        if (/^[A-Z]$/.test(key) || key === '_') {
             grid[row][col] = key;
             moveToNextCell(row, col);
             e.preventDefault();
@@ -84,6 +84,12 @@
             } else if (direction === 'down' && row > 0) {
                 moveToCell(row - 1, col);
             }
+            e.preventDefault();
+        }
+        else if (e.key === ' ') {
+            // Convert space to underscore
+            grid[row][col] = '_';
+            moveToNextCell(row, col);
             e.preventDefault();
         }
     }
@@ -174,5 +180,6 @@
         <p>Click a cell to select it. Click again to toggle direction.</p>
         <p>Use arrow keys to navigate, Tab to move right, Enter to change direction.</p>
         <p>Type a letter to fill the cell and move to the next one.</p>
+        <p>Use <strong>space bar</strong> or type <strong>_</strong> to add a space in the word (will appear as "_" in grid).</p>
     </div>
 </div>
