@@ -1,6 +1,7 @@
 <script>
   import CrosswordGrid from "$lib/components/CrosswordGrid.svelte";
   import WordDetails from "$lib/components/WordDetails.svelte";
+  import AudioVerifier from "$lib/components/AudioVerifier.svelte";
 
   // Initialize with default values
   let grid;
@@ -11,7 +12,7 @@
   let gridComponent;
 
   // UI state
-  let step = $state(1); // 1: Edit Grid, 2: Edit Word Details, 3: View JSON
+  let step = $state(1); // 1: Edit Grid, 2: Edit Word Details, 3: Verify Audio, 4: View JSON
 
   // Function to identify words in the grid
   function identifyWords() {
@@ -79,7 +80,7 @@
               color: getNextColor(),
               textClue: `Song Title`,
               audioUrl: "",
-              startAt: "0:00",
+              startAt: "0:20",
             });
           }
         }
@@ -127,7 +128,7 @@
               color: getNextColor(),
               textClue: `Song Title`,
               audioUrl: "",
-              startAt: "0:00",
+              startAt: "0:20",
             });
           }
         }
@@ -164,6 +165,7 @@
     }
 
     words = identifyWords();
+    colorIndex = 0; // Reset color index when finding new words
 
     if (words.length > 0) {
       step = 2; // Go to word details
@@ -177,6 +179,12 @@
   // Reference to WordDetails component
   let wordDetailsComponent;
 
+  // Function to proceed to audio verification
+  function goToVerification() {
+    // Optional: Add validation here if needed before proceeding
+    step = 3;
+  }
+
   // Function to generate JSON output
   function generateJSON() {
     // Ensure all words have properly formatted values
@@ -188,7 +196,7 @@
           : `#${word.color || "FE9C9C"}`,
       textClue: word.textClue || "",
       audioUrl: word.audioUrl || "",
-      startAt: word.startAt || "0:00",
+      startAt: word.startAt || "0:20",
     }));
 
     // Get date from WordDetails component
@@ -212,7 +220,7 @@
     };
 
     jsonOutput = JSON.stringify(jsonData, null, 2);
-    step = 3; // Go to JSON view
+    step = 4; // Go to JSON view (updated from 3)
   }
 
   // Go back to grid editor
@@ -224,6 +232,11 @@
   function goBackToDetails() {
     step = 2;
   }
+
+  // Go back to audio verification
+  function goBackToVerification() {
+    step = 3;
+  }
 </script>
 
 <div class="min-h-screen bg-gray-100 py-8">
@@ -233,9 +246,9 @@
     </h1>
 
     <!-- Progress steps -->
-    <div class="max-w-4xl mx-auto mb-6">
+    <div class="max-w-5xl mx-auto mb-6">
       <div class="flex items-center justify-between">
-        <div class="flex flex-col items-center">
+        <div class="flex flex-col items-center text-center w-1/4">
           <div
             class={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 1 ? "bg-blue-600 text-white" : "bg-gray-300"}`}
           >
@@ -248,7 +261,7 @@
             class={`h-full ${step >= 2 ? "bg-blue-600" : "bg-gray-300"}`}
           ></div>
         </div>
-        <div class="flex flex-col items-center">
+        <div class="flex flex-col items-center text-center w-1/4">
           <div
             class={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 2 ? "bg-blue-600 text-white" : "bg-gray-300"}`}
           >
@@ -261,11 +274,24 @@
             class={`h-full ${step >= 3 ? "bg-blue-600" : "bg-gray-300"}`}
           ></div>
         </div>
-        <div class="flex flex-col items-center">
+        <div class="flex flex-col items-center text-center w-1/4">
           <div
             class={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 3 ? "bg-blue-600 text-white" : "bg-gray-300"}`}
           >
             3
+          </div>
+          <div class="text-sm mt-1">Verify Audio</div>
+        </div>
+        <div class="flex-1 h-1 mx-2 bg-gray-300">
+          <div
+            class={`h-full ${step >= 4 ? "bg-blue-600" : "bg-gray-300"}`}
+          ></div>
+        </div>
+        <div class="flex flex-col items-center text-center w-1/4">
+          <div
+            class={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 4 ? "bg-blue-600 text-white" : "bg-gray-300"}`}
+          >
+            4
           </div>
           <div class="text-sm mt-1">Generate JSON</div>
         </div>
@@ -300,20 +326,41 @@
 
         <div class="mt-6 flex justify-center">
           <button
-            onclick={generateJSON}
+            onclick={goToVerification}
             class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-200 transform hover:scale-105"
+          >
+            VERIFY AUDIO
+          </button>
+        </div>
+      {:else if step === 3}
+        <!-- Step 3: Audio Verification -->
+        <div class="flex justify-between mb-4">
+          <button
+            onclick={goBackToDetails}
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded"
+          >
+            Back to Details
+          </button>
+        </div>
+
+        <AudioVerifier {words} />
+
+        <div class="mt-6 flex justify-center">
+          <button
+            onclick={generateJSON}
+            class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-200 transform hover:scale-105"
           >
             CONFIRM & GENERATE JSON
           </button>
         </div>
-      {:else if step === 3}
-        <!-- Step 3: JSON Output -->
+      {:else if step === 4}
+        <!-- Step 4: JSON Output -->
         <div class="flex justify-end mb-4">
           <button
-            onclick={goBackToDetails}
+            onclick={goBackToVerification}
             class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded mr-2"
           >
-            Back to Details
+            Back to Verification
           </button>
         </div>
 
@@ -338,7 +385,7 @@
           </button>
           <button
             onclick={() => navigator.clipboard.writeText(jsonOutput)}
-            class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-200"
+            class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-200"
           >
             COPY JSON
           </button>

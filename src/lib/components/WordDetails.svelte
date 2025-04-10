@@ -24,7 +24,7 @@
 
   // Validate audio start time format
   function validateStartTime(time) {
-    if (!time) return "0:00";
+    if (!time) return "0:20";
     // Basic validation - could be enhanced
 
     // If time doesn't have a colon, try to format it
@@ -70,6 +70,11 @@
         class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
         placeholder="Enter puzzle title"
       />
+      {#if title.length > 60}
+        <p class="text-red-500 text-xs italic mt-1">
+          Warning: Title exceeds 60 characters.
+        </p>
+      {/if}
     </div>
 
     <div>
@@ -83,6 +88,11 @@
         class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
         placeholder="1.0.0"
       />
+      {#if version.length > 60}
+        <p class="text-red-500 text-xs italic mt-1">
+          Warning: Version exceeds 60 characters.
+        </p>
+      {/if}
     </div>
   </div>
 
@@ -141,6 +151,11 @@
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 placeholder="Enter a clue for this word"
               />
+              {#if word.textClue && word.textClue.length > 60}
+                <p class="text-red-500 text-xs italic mt-1">
+                  Warning: Clue exceeds 60 characters.
+                </p>
+              {/if}
             </div>
 
             <!-- Audio ID input -->
@@ -159,6 +174,11 @@
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 placeholder="Enter audio ID"
               />
+              {#if word.audioUrl && word.audioUrl.length > 60}
+                <p class="text-red-500 text-xs italic mt-1">
+                  Warning: Audio ID exceeds 60 characters.
+                </p>
+              {/if}
             </div>
 
             <!-- Start Time input -->
@@ -172,7 +192,7 @@
               <input
                 id={`start-${index}`}
                 type="text"
-                value={word.startAt || "0:00"}
+                value={word.startAt || "0:20"}
                 oninput={(e) =>
                   updateWord(
                     index,
@@ -180,7 +200,7 @@
                     validateStartTime(e.target.value)
                   )}
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="0:00"
+                placeholder="0:20"
               />
             </div>
           </div>
