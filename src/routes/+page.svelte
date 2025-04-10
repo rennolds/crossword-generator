@@ -219,7 +219,8 @@
       },
     };
 
-    jsonOutput = JSON.stringify(jsonData, null, 2);
+    // Remove the outer curly braces from the JSON string
+    jsonOutput = JSON.stringify(jsonData, null, 2).slice(1, -1);
     step = 4; // Go to JSON view (updated from 3)
   }
 
