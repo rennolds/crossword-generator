@@ -199,16 +199,22 @@
       startAt: word.startAt || "0:20",
     }));
 
-    // Get date from WordDetails component
-    let dateKey;
+    // Get date, title, and version from WordDetails component
+    let dateKey, puzzleTitle, puzzleVersion;
     if (wordDetailsComponent) {
       dateKey = wordDetailsComponent.getDate();
+      puzzleTitle = wordDetailsComponent.getTitle();
+      puzzleVersion = wordDetailsComponent.getVersion();
     } else {
       dateKey = new Date().toISOString().split("T")[0];
+      puzzleTitle = "";
+      puzzleVersion = "1.0.0";
     }
 
     const jsonData = {
       [dateKey]: {
+        title: puzzleTitle,
+        version: puzzleVersion,
         size: {
           width,
           height,
