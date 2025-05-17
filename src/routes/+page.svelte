@@ -4,53 +4,71 @@
   import AudioVerifier from "$lib/components/AudioVerifier.svelte";
 
   // Initialize with default values
-  let grid;
-  let width = $state(12);
-  let height = $state(10);
+  let currentStepGrid = $state(undefined); // Will hold the grid data across steps
+  let globalWidth = $state(12);
+  let globalHeight = $state(10);
   let jsonOutput = $state("");
   let words = $state([]);
-  let gridComponent;
+  let gridComponentRef; // Reference to the CrosswordGrid component instance
+
+  // State variables to store details from WordDetails component
+  let puzzleDateStore = $state(new Date().toISOString().split("T")[0]);
+  let puzzleTitleStore = $state("");
+  let puzzleVersionStore = $state("1.0.0");
+  let puzzleThemeStore = $state("black"); // Added puzzleThemeStore
 
   // UI state
   let step = $state(1); // 1: Edit Grid, 2: Edit Word Details, 3: Verify Audio, 4: View JSON
 
+  // Initialize or update currentStepGrid when dimensions change or on initial load
+  $effect(() => {
+    if (
+      currentStepGrid === undefined ||
+      currentStepGrid.length !== globalHeight ||
+      (currentStepGrid[0] && currentStepGrid[0].length !== globalWidth)
+    ) {
+      // Initialize if undefined or if dimensions mismatch (e.g. if width/height could change dynamically in future)
+      currentStepGrid = Array(globalHeight)
+        .fill(null)
+        .map(() => Array(globalWidth).fill(""));
+    }
+  });
+
   // Function to identify words in the grid
   function identifyWords() {
-    if (!grid) {
-      // If grid is not available, get it from the component
-      grid = gridComponent.getGrid();
-    }
+    const gridToProcess = currentStepGrid; // Use the centrally managed grid state
 
-    if (!grid || !grid.length) {
-      console.error("Grid is still not available");
+    if (!gridToProcess || !gridToProcess.length || !gridToProcess[0]) {
+      console.error(
+        "Grid is still not available or malformed for word identification"
+      );
       return [];
     }
 
     const foundWords = [];
-    const visited = Array(height)
-      .fill()
-      .map(() => Array(width).fill(false));
+    // Use globalHeight and globalWidth for dimensions
+    const visited = Array(globalHeight)
+      .fill(null)
+      .map(() => Array(globalWidth).fill(false));
 
     // Helper function to check if a cell is valid for word detection
     function isValidCell(row, col) {
       return (
         row >= 0 &&
-        row < height &&
+        row < globalHeight &&
         col >= 0 &&
-        col < width &&
-        grid[row][col] !== ""
+        col < globalWidth &&
+        gridToProcess[row][col] !== ""
       );
     }
 
     // Scan for across words
-    for (let row = 0; row < height; row++) {
-      for (let col = 0; col < width; col++) {
-        // Skip if the cell is empty or has been visited for across words
-        if (grid[row][col] === "" || visited[row][col]) continue;
+    for (let row = 0; row < globalHeight; row++) {
+      for (let col = 0; col < globalWidth; col++) {
+        if (gridToProcess[row][col] === "" || visited[row][col]) continue;
 
-        // Check if this is the start of an across word
-        // (either at the left edge or has an empty cell to its left)
-        const isStartOfAcrossWord = col === 0 || grid[row][col - 1] === "";
+        const isStartOfAcrossWord =
+          col === 0 || gridToProcess[row][col - 1] === "";
 
         if (isStartOfAcrossWord) {
           let wordLength = 0;
@@ -58,19 +76,17 @@
           let displayWord = "";
           let currentCol = col;
 
-          // Scan right until we hit the end of the word
           while (isValidCell(row, currentCol)) {
-            // Replace underscores with spaces for the word value in JSON
-            // Keep all other characters including punctuation
             displayWord +=
-              grid[row][currentCol] === "_" ? " " : grid[row][currentCol];
-            word += grid[row][currentCol];
+              gridToProcess[row][currentCol] === "_"
+                ? " "
+                : gridToProcess[row][currentCol];
+            word += gridToProcess[row][currentCol];
             visited[row][currentCol] = true;
             wordLength++;
             currentCol++;
           }
 
-          // Only consider words of length >= 2
           if (wordLength >= 2) {
             foundWords.push({
               word: displayWord,
@@ -78,27 +94,25 @@
               startY: row,
               direction: "across",
               color: getNextColor(),
-              textClue: `Song Title`,
+              textClue: `Song title`,
               audioUrl: "",
               startAt: "0:20",
+              audioDuration: 6.5,
             });
           }
         }
       }
     }
 
-    // Reset visited array for down words
     visited.forEach((row) => row.fill(false));
 
     // Scan for down words
-    for (let col = 0; col < width; col++) {
-      for (let row = 0; row < height; row++) {
-        // Skip if the cell is empty or has been visited for down words
-        if (grid[row][col] === "" || visited[row][col]) continue;
+    for (let col = 0; col < globalWidth; col++) {
+      for (let row = 0; row < globalHeight; row++) {
+        if (gridToProcess[row][col] === "" || visited[row][col]) continue;
 
-        // Check if this is the start of a down word
-        // (either at the top edge or has an empty cell above it)
-        const isStartOfDownWord = row === 0 || grid[row - 1][col] === "";
+        const isStartOfDownWord =
+          row === 0 || gridToProcess[row - 1][col] === "";
 
         if (isStartOfDownWord) {
           let wordLength = 0;
@@ -106,19 +120,17 @@
           let displayWord = "";
           let currentRow = row;
 
-          // Scan down until we hit the end of the word
           while (isValidCell(currentRow, col)) {
-            // Replace underscores with spaces for the word value in JSON
-            // Keep all other characters including punctuation
             displayWord +=
-              grid[currentRow][col] === "_" ? " " : grid[currentRow][col];
-            word += grid[currentRow][col];
+              gridToProcess[currentRow][col] === "_"
+                ? " "
+                : gridToProcess[currentRow][col];
+            word += gridToProcess[currentRow][col];
             visited[currentRow][col] = true;
             wordLength++;
             currentRow++;
           }
 
-          // Only consider words of length >= 2
           if (wordLength >= 2) {
             foundWords.push({
               word: displayWord,
@@ -126,9 +138,10 @@
               startY: row,
               direction: "down",
               color: getNextColor(),
-              textClue: `Song Title`,
+              textClue: `Song title`,
               audioUrl: "",
               startAt: "0:20",
+              audioDuration: 6.5,
             });
           }
         }
@@ -159,12 +172,12 @@
   function findWords() {
     console.log("Find words button clicked");
 
-    // Make sure we get the latest grid data from the component
-    if (gridComponent) {
-      grid = gridComponent.getGrid();
+    // Get the latest grid data from the component and store it in currentStepGrid
+    if (gridComponentRef) {
+      currentStepGrid = gridComponentRef.getGrid();
     }
 
-    words = identifyWords();
+    words = identifyWords(); // identifyWords now uses currentStepGrid
     colorIndex = 0; // Reset color index when finding new words
 
     if (words.length > 0) {
@@ -181,13 +194,17 @@
 
   // Function to proceed to audio verification
   function goToVerification() {
-    // Optional: Add validation here if needed before proceeding
+    if (wordDetailsComponent) {
+      puzzleDateStore = wordDetailsComponent.getDate();
+      puzzleTitleStore = wordDetailsComponent.getTitle();
+      puzzleVersionStore = wordDetailsComponent.getVersion();
+      puzzleThemeStore = wordDetailsComponent.getTheme(); // Get theme
+    }
     step = 3;
   }
 
   // Function to generate JSON output
   function generateJSON() {
-    // Ensure all words have properly formatted values
     words = words.map((word) => ({
       ...word,
       color:
@@ -197,41 +214,35 @@
       textClue: word.textClue || "",
       audioUrl: word.audioUrl || "",
       startAt: word.startAt || "0:20",
+      audioDuration: word.audioDuration || 6.5,
     }));
 
-    // Get date, title, and version from WordDetails component
-    let dateKey, puzzleTitle, puzzleVersion;
-    if (wordDetailsComponent) {
-      dateKey = wordDetailsComponent.getDate();
-      puzzleTitle = wordDetailsComponent.getTitle();
-      puzzleVersion = wordDetailsComponent.getVersion();
-    } else {
-      dateKey = new Date().toISOString().split("T")[0];
-      puzzleTitle = "";
-      puzzleVersion = "1.0.0";
-    }
+    // Use stored values
+    const dateKey = puzzleDateStore || new Date().toISOString().split("T")[0];
+    const currentPuzzleTitle = puzzleTitleStore || "";
+    const currentPuzzleVersion = puzzleVersionStore || "1.0.0";
+    const currentPuzzleTheme = puzzleThemeStore || "black"; // Use stored theme
 
     const jsonData = {
       [dateKey]: {
-        title: puzzleTitle,
-        version: puzzleVersion,
+        title: currentPuzzleTitle, // Use stored title
+        version: currentPuzzleVersion, // Use stored version
         size: {
-          width,
-          height,
+          width: globalWidth, // Use globalWidth
+          height: globalHeight, // Use globalHeight
         },
-        backgroundImage:
-          "https://raw.githubusercontent.com/saasify-sh/react-blobby-blob/master/media/blob.jpg",
+        theme: currentPuzzleTheme, // Use stored theme
         words,
       },
     };
 
-    // Remove the outer curly braces from the JSON string
     jsonOutput = JSON.stringify(jsonData, null, 2).slice(1, -1);
-    step = 4; // Go to JSON view (updated from 3)
+    step = 4;
   }
 
   // Go back to grid editor
   function goBackToGrid() {
+    // currentStepGrid already holds the state, CrosswordGrid will use it on re-render
     step = 1;
   }
 
@@ -308,7 +319,15 @@
     <div class="max-w-6xl mx-auto bg-white rounded-lg shadow-lg p-6">
       {#if step === 1}
         <!-- Step 1: Grid Editor -->
-        <CrosswordGrid bind:this={gridComponent} bind:width bind:height />
+        {#if currentStepGrid}
+          <!-- Ensure currentStepGrid is initialized before rendering CrosswordGrid -->
+          <CrosswordGrid
+            bind:this={gridComponentRef}
+            width={globalWidth}
+            height={globalHeight}
+            grid={currentStepGrid}
+          />
+        {/if}
 
         <div class="mt-8 flex justify-center">
           <button

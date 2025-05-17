@@ -1,15 +1,28 @@
 <script>
-  // Grid dimensions
-  let { width, height, grid } = $props();
-  width = 12;
-  height = 10;
+  // Grid dimensions from props, with defaults
+  let {
+    width: propWidth = 12,
+    height: propHeight = 10,
+    grid: initialGridProp,
+  } = $props();
 
-  // Create a 2D array for the grid
-  let gridState = $state(grid);
+  // Use constants for dimensions within this component instance
+  const componentWidth = propWidth;
+  const componentHeight = propHeight;
 
-  grid = Array(height)
-    .fill()
-    .map(() => Array(width).fill(""));
+  // Create a reactive 2D array for the internal grid state.
+  // Initialize from initialGridProp if valid, otherwise create a new empty grid.
+  // Deep copy initialGridProp to ensure mutability and avoid direct prop modification.
+  let internalGrid = $state(
+    initialGridProp &&
+      initialGridProp.length === componentHeight &&
+      initialGridProp[0] &&
+      initialGridProp[0].length === componentWidth
+      ? initialGridProp.map((row) => [...row])
+      : Array(componentHeight)
+          .fill(null)
+          .map(() => Array(componentWidth).fill(""))
+  );
 
   // Track the currently selected cell
   let selectedCell = $state({ row: 0, col: 0 });
@@ -27,25 +40,25 @@
     }
   }
 
-  // Handle key presses
+  // Handle key presses - all modifications are to internalGrid
   function handleKeyDown(e, row, col) {
     const key = e.key.toUpperCase();
 
     // Handle letter input (A-Z), punctuation, and underscore for spaces
     if (/^[A-Z!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]$/.test(key) || key === "_") {
-      grid[row][col] = key;
+      internalGrid[row][col] = key === "_" ? "_" : key; // Modify internalGrid
       moveToNextCell(row, col);
       e.preventDefault();
     }
     // Handle navigation keys
     else if (e.key === "ArrowRight") {
-      moveToCell(row, Math.min(col + 1, width - 1));
+      moveToCell(row, Math.min(col + 1, componentWidth - 1));
       e.preventDefault();
     } else if (e.key === "ArrowLeft") {
       moveToCell(row, Math.max(col - 1, 0));
       e.preventDefault();
     } else if (e.key === "ArrowDown") {
-      moveToCell(Math.min(row + 1, height - 1), col);
+      moveToCell(Math.min(row + 1, componentHeight - 1), col);
       e.preventDefault();
     } else if (e.key === "ArrowUp") {
       moveToCell(Math.max(row - 1, 0), col);
@@ -53,13 +66,18 @@
     } else if (e.key === "Tab") {
       if (e.shiftKey) {
         // Move left
-        const prevCol = col > 0 ? col - 1 : width - 1;
-        const prevRow = col > 0 ? row : row > 0 ? row - 1 : height - 1;
+        const prevCol = col > 0 ? col - 1 : componentWidth - 1;
+        const prevRow = col > 0 ? row : row > 0 ? row - 1 : componentHeight - 1;
         moveToCell(prevRow, prevCol);
       } else {
         // Move right
-        const nextCol = col < width - 1 ? col + 1 : 0;
-        const nextRow = col < width - 1 ? row : row < height - 1 ? row + 1 : 0;
+        const nextCol = col < componentWidth - 1 ? col + 1 : 0;
+        const nextRow =
+          col < componentWidth - 1
+            ? row
+            : row < componentHeight - 1
+              ? row + 1
+              : 0;
         moveToCell(nextRow, nextCol);
       }
       e.preventDefault();
@@ -68,7 +86,7 @@
       e.preventDefault();
     } else if (e.key === "Backspace") {
       // Clear the current cell
-      grid[row][col] = "";
+      internalGrid[row][col] = ""; // Modify internalGrid
 
       // Move to previous cell
       if (direction === "across" && col > 0) {
@@ -79,7 +97,7 @@
       e.preventDefault();
     } else if (e.key === " ") {
       // Convert space to underscore
-      grid[row][col] = "_";
+      internalGrid[row][col] = "_"; // Modify internalGrid
       moveToNextCell(row, col);
       e.preventDefault();
     }
@@ -88,11 +106,11 @@
   // Move to next cell based on current direction
   function moveToNextCell(row, col) {
     if (direction === "across") {
-      if (col < width - 1) {
+      if (col < componentWidth - 1) {
         moveToCell(row, col + 1);
       }
     } else {
-      if (row < height - 1) {
+      if (row < componentHeight - 1) {
         moveToCell(row + 1, col);
       }
     }
@@ -104,30 +122,35 @@
     // Focus the cell input (done with bind:this in template)
   }
 
-  // Create a 2D array to store references to the cell inputs
-  let cellRefs = Array(height)
-    .fill()
-    .map(() => Array(width).fill(null));
+  // Create a 2D array to store references to the cell inputs, sized dynamically
+  let cellRefs = Array(componentHeight)
+    .fill(null)
+    .map(() => Array(componentWidth).fill(null));
 
   // Effect to focus the selected cell when it changes
   $effect(() => {
     const { row, col } = selectedCell;
-    const input = cellRefs[row][col];
-    if (input) {
-      input.focus();
+    // Ensure row and col are within bounds for cellRefs
+    if (row >= 0 && row < componentHeight && col >= 0 && col < componentWidth) {
+      const input = cellRefs[row]?.[col]; // Safely access using optional chaining
+      if (input) {
+        input.focus();
+      }
     }
   });
 
-  // Clear the grid
+  // Clear the internal grid
   function clearGrid() {
-    grid = Array(height)
-      .fill()
-      .map(() => Array(width).fill(""));
+    internalGrid = Array(componentHeight)
+      .fill(null)
+      .map(() => Array(componentWidth).fill(""));
+    selectedCell = { row: 0, col: 0 }; // Reset selection
+    direction = "across"; // Reset direction
   }
 
-  // Make a function to get the current grid state
+  // Make a function to get the current internal grid state
   export function getGrid() {
-    return grid;
+    return internalGrid;
   }
 </script>
 
@@ -148,9 +171,12 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-12 gap-0 border border-gray-400">
-    {#each Array(height) as _, rowIndex}
-      {#each Array(width) as _, colIndex}
+  <div
+    class="grid gap-0 border border-gray-400"
+    style={`grid-template-columns: repeat(${componentWidth}, minmax(0, 1fr));`}
+  >
+    {#each Array(componentHeight) as _, rowIndex}
+      {#each Array(componentWidth) as _, colIndex}
         <div
           class="w-10 h-10 border border-gray-300 flex items-center justify-center
                         font-bold text-lg cursor-pointer
@@ -163,7 +189,7 @@
           <input
             bind:this={cellRefs[rowIndex][colIndex]}
             type="text"
-            value={grid[rowIndex][colIndex]}
+            value={internalGrid[rowIndex][colIndex]}
             onkeydown={(e) => handleKeyDown(e, rowIndex, colIndex)}
             class="w-full h-full text-center font-bold text-lg outline-none bg-transparent"
             maxlength="1"

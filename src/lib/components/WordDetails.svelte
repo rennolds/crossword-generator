@@ -11,33 +11,19 @@
   export function getVersion() {
     return version;
   }
+  export function getTheme() {
+    return theme;
+  }
 
   let date = $state(new Date().toISOString().split("T")[0]); // Default to today's date
   let title = $state(""); // Default empty string
   let version = $state("1.0.0"); // Default version
+  let theme = $state("black"); // Added theme state, default to black
 
   // Validate color and ensure it has a # prefix
   function validateColor(color) {
     if (!color) return "#FE9C9C"; // Default color (first in our sequence)
     return color.startsWith("#") ? color : `#${color}`;
-  }
-
-  // Validate audio start time format
-  function validateStartTime(time) {
-    if (!time) return "0:20";
-    // Basic validation - could be enhanced
-
-    // If time doesn't have a colon, try to format it
-    if (!time.includes(":")) {
-      if (time.length <= 2) {
-        return `0:${time.padStart(2, "0")}`;
-      } else {
-        const minutes = time.slice(0, -2);
-        const seconds = time.slice(-2);
-        return `${minutes}:${seconds}`;
-      }
-    }
-    return time;
   }
 
   function updateWord(index, field, value) {
@@ -93,6 +79,22 @@
           Warning: Version exceeds 60 characters.
         </p>
       {/if}
+    </div>
+
+    <div>
+      <label class="block text-gray-700 font-bold mb-2" for="theme-select">
+        Theme
+      </label>
+      <select
+        id="theme-select"
+        bind:value={theme}
+        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+      >
+        <option value="black">Black</option>
+        <option value="pink">Pink</option>
+        <option value="green">Green</option>
+        <option value="purple">Purple</option>
+      </select>
     </div>
   </div>
 
@@ -179,29 +181,6 @@
                   Warning: Audio ID exceeds 60 characters.
                 </p>
               {/if}
-            </div>
-
-            <!-- Start Time input -->
-            <div>
-              <label
-                class="block text-gray-700 text-sm font-bold mb-1"
-                for={`start-${index}`}
-              >
-                Start Time
-              </label>
-              <input
-                id={`start-${index}`}
-                type="text"
-                value={word.startAt || "0:20"}
-                oninput={(e) =>
-                  updateWord(
-                    index,
-                    "startAt",
-                    validateStartTime(e.target.value)
-                  )}
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="0:20"
-              />
             </div>
           </div>
         </div>
